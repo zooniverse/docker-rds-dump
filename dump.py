@@ -54,11 +54,12 @@ if len(snapshots) == 0:
     sys.exit(2)
 
 latest_snapshot = snapshots[-1]
+latest_snapshot_name = latest_snapshot['DBSnapshotIdentifier'].split(':')[1]
 
 print 'Found snapshot "%s".' % latest_snapshot['DBSnapshotIdentifier']
 
 dump_instance_identifier = 'dump-%s-%s' % (
-    latest_snapshot['DBSnapshotIdentifier'].split(':')[1],
+    latest_snapshot_name,
     "".join([ random.choice(string.letters) for x in range(8) ])
 )
 
@@ -105,7 +106,7 @@ if not dump_instance['Engine'] in dump_cmds:
 print 'Dumping "%s".' % dump_instance['DBName']
 
 dump_cmds[dump_instance['Engine']](
-    dump_instance, latest_snapshot['DBSnapshotIdentifier']
+    dump_instance, latest_snapshot_name
 )
 
 print "Dump completed."
