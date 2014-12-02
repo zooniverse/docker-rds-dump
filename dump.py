@@ -32,12 +32,12 @@ dump_cmds = {
     'postgres': dump_postgres,
 }
 
-conn = rds2.connect_to_region(AWS_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID,
-                              aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-
 if len(sys.argv) != 2:
     print 'Usage: %s db-instance-name' % sys.argv[0]
     sys.exit(1)
+
+conn = rds2.connect_to_region(AWS_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID,
+                              aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
 _, db_instance_name = sys.argv
 
@@ -112,6 +112,6 @@ dump_cmds[dump_instance['Engine']](
 print "Dump completed."
 
 conn.delete_db_instance(dump_instance_identifier,
-                       skip_final_snapshot=True)
+                        skip_final_snapshot=True)
 
 print 'Terminated "%s".' % dump_instance_identifier
