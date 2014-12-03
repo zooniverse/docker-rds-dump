@@ -21,15 +21,29 @@ def dump_postgres(db_instance, out_file_name):
         '/out/%s.dump' % out_file_name, 'w'
     ) as outfile:
         return subprocess.check_call([
-            "pg_dump", "-w", "-Fc",
-            "-U", db_instance['MasterUsername'],
-            "-h", db_instance['Endpoint']['Address'],
-            "-p", str(db_instance['Endpoint']['Port']),
-            db_instance['DBName']
+            'pg_dump', '-w', '-Fc',
+            '-U', os.environ.get('DB_USER', db_instance['MasterUsername']),
+            '-h', db_instance['Endpoint']['Address'],
+            '-p', str(db_instance['Endpoint']['Port']),
+            os.environ.get('DB_NAME', db_instance['DBName'])
+        ], stdout=outfile)
+
+def dump_mysql(db_instance, out_file_name):
+    with open(
+        '/out/%s.sql' % out_file_name, 'w'
+    ) as outfile:
+        return subprocess.check_call([
+            'mysqldump',
+            '-u', os.environ.get('DB_USER', db_instance['MasterUsername']),
+            '-p%s' % os.environ.get('DB_PASSWORD', ''),
+            '-h', db_instance['Endpoint']['Address'],
+            '-P', str(db_instance['Endpoint']['Port']),
+            os.environ.get('DB_NAME', db_instance['DBName'])
         ], stdout=outfile)
 
 dump_cmds = {
     'postgres': dump_postgres,
+    'mysql': dump_mysql,
 }
 
 if len(sys.argv) != 2:
