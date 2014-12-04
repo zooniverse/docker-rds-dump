@@ -13,7 +13,7 @@ AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 
-def dump_postgres(db_instance, out_file_name):
+def dump_postgres(db_instance, db_name, out_file_name):
     if not 'PGPASSWORD' in os.environ:
         os.environ['PGPASSWORD'] = os.environ.get('DB_PASSWORD')
 
@@ -25,10 +25,10 @@ def dump_postgres(db_instance, out_file_name):
             '-U', os.environ.get('DB_USER', db_instance['MasterUsername']),
             '-h', db_instance['Endpoint']['Address'],
             '-p', str(db_instance['Endpoint']['Port']),
-            os.environ.get('DB_NAME', db_instance['DBName'])
+            db_name
         ], stdout=outfile)
 
-def dump_mysql(db_instance, out_file_name):
+def dump_mysql(db_instance, db_name, out_file_name):
     with open(
         '/out/%s.sql' % out_file_name, 'w'
     ) as outfile:
@@ -38,7 +38,7 @@ def dump_mysql(db_instance, out_file_name):
             '-p%s' % os.environ.get('DB_PASSWORD', ''),
             '-h', db_instance['Endpoint']['Address'],
             '-P', str(db_instance['Endpoint']['Port']),
-            os.environ.get('DB_NAME', db_instance['DBName'])
+            db_name
         ], stdout=outfile)
 
 dump_cmds = {
@@ -46,14 +46,14 @@ dump_cmds = {
     'mysql': dump_mysql,
 }
 
-if len(sys.argv) != 2:
-    print 'Usage: %s db-instance-name' % sys.argv[0]
+if len(sys.argv) < 2:
+    print 'Usage: %s db-instance-name [db-name ...]' % sys.argv[0]
     sys.exit(1)
 
 conn = rds2.connect_to_region(AWS_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID,
                               aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
-_, db_instance_name = sys.argv
+_, db_instance_name, db_names = sys.argv[0], sys.argv[1], sys.argv[2:]
 
 snapshots = conn.describe_db_snapshots(db_instance_name)\
         ['DescribeDBSnapshotsResponse']\
@@ -117,11 +117,17 @@ if not dump_instance['Engine'] in dump_cmds:
     print "Error: Can't handle databases of this type. Aborting."
     sys.exit(4)
 
-print 'Dumping "%s".' % dump_instance['DBName']
-
-dump_cmds[dump_instance['Engine']](
-    dump_instance, latest_snapshot_name
-)
+if len(db_names) == 0:
+    print 'Dumping "%s".' % dump_instance['DBName']
+    dump_cmds[dump_instance['Engine']](
+        dump_instance, dump_instance['DBName'], latest_snapshot_name
+    )
+else:
+    for db_name in db_names:
+        print 'Dumping "%s".' % db_name
+        dump_cmds[dump_instance['Engine']](
+            dump_instance, db_name, '%s-%s' % (db_name, latest_snapshot_name)
+        )
 
 print "Dump completed."
 
