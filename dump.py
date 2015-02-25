@@ -68,7 +68,7 @@ if len(snapshots) == 0:
     sys.exit(2)
 
 latest_snapshot = snapshots[-1]
-latest_snapshot_name = latest_snapshot['DBSnapshotIdentifier'].split(':')[1]
+latest_snapshot_name = latest_snapshot['DBSnapshotIdentifier'].split(':')[-1]
 
 print 'Found snapshot "%s".' % latest_snapshot['DBSnapshotIdentifier']
 
