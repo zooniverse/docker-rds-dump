@@ -12,6 +12,7 @@ from time import sleep
 AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+DB_INSTANCE_CLASS = os.environ.get('DB_INSTANCE_CLASS')
 
 def dump_postgres(db_instance, db_name, out_file_name):
     if not 'PGPASSWORD' in os.environ:
@@ -80,7 +81,8 @@ dump_instance_identifier = 'dump-%s-%s' % (
 conn.restore_db_instance_from_db_snapshot(
     dump_instance_identifier,
     latest_snapshot['DBSnapshotIdentifier'],
-    publicly_accessible=True
+    publicly_accessible=True,
+    db_instance_class=DB_INSTANCE_CLASS
 )
 
 print 'Launched instance "%s".' % dump_instance_identifier
