@@ -87,7 +87,7 @@ conn.restore_db_instance_from_db_snapshot(
 
 print 'Launched instance "%s".' % dump_instance_identifier
 
-TIMEOUT = 1200
+TIMEOUT = 3600
 SLEEP_INTERVAL = 30
 
 print "Waiting for instance to become available."
