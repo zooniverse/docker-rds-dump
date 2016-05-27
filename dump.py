@@ -7,12 +7,14 @@ import subprocess
 import sys
 
 from boto import rds2
+from boto.exception import NoAuthHandlerFound
 from time import sleep
 
 AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 DB_INSTANCE_CLASS = os.environ.get('DB_INSTANCE_CLASS')
+MAX_RETRIES = int(os.environ.get('MAX_RETRIES', 2))
 
 def dump_postgres(db_instance, db_name, out_file_name):
     if not 'PGPASSWORD' in os.environ:
@@ -42,6 +44,16 @@ def dump_mysql(db_instance, db_name, out_file_name):
             db_name
         ], stdout=outfile)
 
+def with_retry(func, *args, **kwargs):
+    ret = None
+    for x in range(MAX_RETRIES):
+        try:
+            return func(*args, **kwargs)
+        except NoAuthHandlerFound as e:
+            ret = e
+            sleep(10)
+    return ret
+
 dump_cmds = {
     'postgres': dump_postgres,
     'mysql': dump_mysql,
@@ -51,8 +63,9 @@ if len(sys.argv) < 2:
     print 'Usage: %s db-instance-name [db-name ...]' % sys.argv[0]
     sys.exit(1)
 
-conn = rds2.connect_to_region(AWS_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID,
-                              aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+conn = with_retry(rds2.connect_to_region, AWS_REGION,
+                  aws_access_key_id=AWS_ACCESS_KEY_ID,
+                  aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
 _, db_instance_name, db_names = sys.argv[0], sys.argv[1], sys.argv[2:]
 
@@ -78,7 +91,8 @@ dump_instance_identifier = 'dump-%s-%s' % (
     "".join([ random.choice(string.letters) for x in range(8) ])
 )
 
-conn.restore_db_instance_from_db_snapshot(
+with_retry(
+    conn.restore_db_instance_from_db_snapshot,
     dump_instance_identifier,
     latest_snapshot['DBSnapshotIdentifier'],
     publicly_accessible=True,
@@ -107,8 +121,8 @@ while TIMEOUT > 0:
 if dump_instance['DBInstanceStatus'] != 'available':
     print ('Instance "%s" did not become available within time limit. '
            'Aborting.' % dump_instance_identifier)
-    conn.delete_db_instance(dump_instance_identifier,
-                            skip_final_snapshot=True)
+    with_retry(conn.delete_db_instance, dump_instance_identifier,
+               skip_final_snapshot=True)
     exit(3)
 
 print "Instance is available."
