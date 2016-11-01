@@ -101,7 +101,7 @@ with_retry(
 
 print 'Launched instance "%s".' % dump_instance_identifier
 
-TIMEOUT = 3600
+TIMEOUT = 7200
 SLEEP_INTERVAL = 30
 
 print "Waiting for instance to become available."
