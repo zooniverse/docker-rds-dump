@@ -101,53 +101,53 @@ with_retry(
 
 print 'Launched instance "%s".' % dump_instance_identifier
 
-TIMEOUT = 7200
-SLEEP_INTERVAL = 30
+try:
+    TIMEOUT = 7200
+    SLEEP_INTERVAL = 30
 
-print "Waiting for instance to become available."
+    print "Waiting for instance to become available."
 
-while TIMEOUT > 0:
-    dump_instance = conn.describe_db_instances(dump_instance_identifier)\
-            ['DescribeDBInstancesResponse']\
-            ['DescribeDBInstancesResult']\
-            ['DBInstances'][0]
+    while TIMEOUT > 0:
+        dump_instance = conn.describe_db_instances(dump_instance_identifier)\
+                ['DescribeDBInstancesResponse']\
+                ['DescribeDBInstancesResult']\
+                ['DBInstances'][0]
 
-    if dump_instance['DBInstanceStatus'] == 'available':
-        break
+        if dump_instance['DBInstanceStatus'] == 'available':
+            break
 
-    TIMEOUT -= SLEEP_INTERVAL
-    sleep(SLEEP_INTERVAL)
+        TIMEOUT -= SLEEP_INTERVAL
+        sleep(SLEEP_INTERVAL)
 
-if dump_instance['DBInstanceStatus'] != 'available':
-    print ('Instance "%s" did not become available within time limit. '
-           'Aborting.' % dump_instance_identifier)
+    if dump_instance['DBInstanceStatus'] != 'available':
+        print ('Instance "%s" did not become available within time limit. '
+               'Aborting.' % dump_instance_identifier)
+        exit(3)
+
+    print "Instance is available."
+
+    print 'Instance engine is "%s".' % dump_instance['Engine']
+
+    if not dump_instance['Engine'] in dump_cmds:
+        print "Error: Can't handle databases of this type. Aborting."
+        sys.exit(4)
+
+    if len(db_names) == 0:
+        print 'Dumping "%s".' % dump_instance['DBName']
+        dump_cmds[dump_instance['Engine']](
+            dump_instance, dump_instance['DBName'], latest_snapshot_name
+        )
+    else:
+        for db_name in db_names:
+            print 'Dumping "%s".' % db_name
+            dump_cmds[dump_instance['Engine']](
+                dump_instance, db_name,
+                '%s-%s' % (db_name, latest_snapshot_name)
+            )
+
+    print "Dump completed."
+finally:
     with_retry(conn.delete_db_instance, dump_instance_identifier,
                skip_final_snapshot=True)
-    exit(3)
 
-print "Instance is available."
-
-print 'Instance engine is "%s".' % dump_instance['Engine']
-
-if not dump_instance['Engine'] in dump_cmds:
-    print "Error: Can't handle databases of this type. Aborting."
-    sys.exit(4)
-
-if len(db_names) == 0:
-    print 'Dumping "%s".' % dump_instance['DBName']
-    dump_cmds[dump_instance['Engine']](
-        dump_instance, dump_instance['DBName'], latest_snapshot_name
-    )
-else:
-    for db_name in db_names:
-        print 'Dumping "%s".' % db_name
-        dump_cmds[dump_instance['Engine']](
-            dump_instance, db_name, '%s-%s' % (db_name, latest_snapshot_name)
-        )
-
-print "Dump completed."
-
-conn.delete_db_instance(dump_instance_identifier,
-                        skip_final_snapshot=True)
-
-print 'Terminated "%s".' % dump_instance_identifier
+    print 'Terminated "%s".' % dump_instance_identifier
