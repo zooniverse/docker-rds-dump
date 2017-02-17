@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 from boto import rds2
-from boto.exception import NoAuthHandlerFound
+from boto.exception import NoAuthHandlerFound, JSONResponseError
 from time import sleep
 
 AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
@@ -49,7 +49,7 @@ def with_retry(func, *args, **kwargs):
     for x in range(MAX_RETRIES):
         try:
             return func(*args, **kwargs)
-        except NoAuthHandlerFound as e:
+        except (NoAuthHandlerFound, JSONResponseError) as e:
             ret = e
             sleep(10)
     return ret
@@ -108,13 +108,15 @@ try:
     print "Waiting for instance to become available."
 
     while TIMEOUT > 0:
-        dump_instance = conn.describe_db_instances(dump_instance_identifier)\
-                ['DescribeDBInstancesResponse']\
-                ['DescribeDBInstancesResult']\
-                ['DBInstances'][0]
-
-        if dump_instance['DBInstanceStatus'] == 'available':
-            break
+        try:
+            result = conn.describe_db_instances(
+                dump_instance_identifier,
+            )['DescribeDBInstancesResponse']['DescribeDBInstancesResult']
+            dump_instance = result['DBInstances'][0]
+            if dump_instance['DBInstanceStatus'] == 'available':
+                break
+        except JSONResponseError:
+            pass
 
         TIMEOUT -= SLEEP_INTERVAL
         sleep(SLEEP_INTERVAL)
