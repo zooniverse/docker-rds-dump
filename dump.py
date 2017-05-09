@@ -107,6 +107,8 @@ try:
 
     print "Waiting for instance to become available."
 
+    dump_instance = {}
+
     while TIMEOUT > 0:
         try:
             result = conn.describe_db_instances(
@@ -121,7 +123,7 @@ try:
         TIMEOUT -= SLEEP_INTERVAL
         sleep(SLEEP_INTERVAL)
 
-    if dump_instance['DBInstanceStatus'] != 'available':
+    if dump_instance.get('DBInstanceStatus') != 'available':
         print ('Instance "%s" did not become available within time limit. '
                'Aborting.' % dump_instance_identifier)
         exit(3)
