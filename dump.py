@@ -21,7 +21,7 @@ CONFIG = {}
 
 if os.path.isfile(CONFIG_FILE_PATH):
     with open(CONFIG_FILE_PATH) as config_f:
-        config.update(yaml.load(config_f)
+        config.update(yaml.load(config_f))
 
 CONFIG.setdefault('AWS_REGION', os.environ.get('AWS_REGION', 'us-east-1'))
 CONFIG.setdefault('AWS_ACCESS_KEY_ID', os.environ.get('AWS_ACCESS_KEY_ID'))
@@ -35,16 +35,20 @@ CONFIG.setdefault(
 )
 CONFIG.setdefault('MAX_RETRIES', int(os.environ.get('MAX_RETRIES', 2)))
 
+if not 'DB_USER' in CONFIG and 'DB_USER' in os.environ:
+    CONFIG['DB_USER'] = os.environ['DB_USER']
+
+CONFIG.setdefault('DB_PASSWORD', os.environ.get('DB_PASSWORD', ''))
+
 def dump_postgres(db_instance, db_name, out_file_name):
-    if not 'PGPASSWORD' in os.environ:
-        os.environ['PGPASSWORD'] = os.environ.get('DB_PASSWORD')
+    os.environ['PGPASSWORD'] = CONFIG['DB_PASSWORD']
 
     with open(
         '/out/%s.dump' % out_file_name, 'w'
     ) as outfile:
         return subprocess.check_call([
             'pg_dump', '-w', '-Fc',
-            '-U', os.environ.get('DB_USER', db_instance['MasterUsername']),
+            '-U', CONFIG.get('DB_USER', db_instance['MasterUsername']),
             '-h', db_instance['Endpoint']['Address'],
             '-p', str(db_instance['Endpoint']['Port']),
             db_name
@@ -56,8 +60,8 @@ def dump_mysql(db_instance, db_name, out_file_name):
     ) as outfile:
         return subprocess.check_call([
             'mysqldump',
-            '-u', os.environ.get('DB_USER', db_instance['MasterUsername']),
-            '-p%s' % os.environ.get('DB_PASSWORD', ''),
+            '-u', CONFIG.get('DB_USER', db_instance['MasterUsername']),
+            '-p%s' % CONFIG['DB_PASSWORD'],
             '-h', db_instance['Endpoint']['Address'],
             '-P', str(db_instance['Endpoint']['Port']),
             db_name
