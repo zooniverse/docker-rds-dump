@@ -21,7 +21,7 @@ CONFIG = {}
 
 if os.path.isfile(CONFIG_FILE_PATH):
     with open(CONFIG_FILE_PATH) as config_f:
-        config.update(yaml.load(config_f))
+        CONFIG.update(yaml.load(config_f))
 
 CONFIG.setdefault('AWS_REGION', os.environ.get('AWS_REGION', 'us-east-1'))
 CONFIG.setdefault('AWS_ACCESS_KEY_ID', os.environ.get('AWS_ACCESS_KEY_ID'))
