@@ -1,18 +1,20 @@
 FROM ubuntu:14.04
 
-ENV DEBIAN_FRONTEND noninteractive
+COPY ACCC4CF8.asc /usr/src/app/
 
-ADD requirements.txt /
-
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y wget mysql-client python-pip && \
-    echo "deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main" \
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main" \
         > /etc/apt/sources.list.d/pgdg.list && \
-    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc \
-        | apt-key add - && \
-    apt-get update && apt-get install -y postgresql-client-9.4 && \
-    pip install -r requirements.txt
+    apt-key add /usr/src/app/ACCC4CF8.asc && \
+    apt-get update && \
+    apt-get install -y \
+        postgresql-client-9.4 \
+        wget \
+        mysql-client \
+        python-yaml \
+        python-boto \
+        && \
+    rm -rf /var/lib/apt/lists/*
 
-ADD dump.py /
+COPY dump.py /usr/src/app/
 
-ENTRYPOINT [ "/dump.py" ]
+ENTRYPOINT [ "/usr/src/app/dump.py" ]
