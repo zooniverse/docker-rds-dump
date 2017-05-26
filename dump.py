@@ -6,15 +6,34 @@ import string
 import subprocess
 import sys
 
+import yaml
+
 from boto import rds2
 from boto.exception import NoAuthHandlerFound, JSONResponseError
 from time import sleep
 
-AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
-DB_INSTANCE_CLASS = os.environ.get('DB_INSTANCE_CLASS')
-MAX_RETRIES = int(os.environ.get('MAX_RETRIES', 2))
+CONFIG_FILE_PATH = os.environ.get(
+    'CONFIG_FILE_PATH',
+    os.path.join('/', 'run', 'secrets', 'config.yml')
+)
+
+CONFIG = {}
+
+if os.path.isfile(CONFIG_FILE_PATH):
+    with open(CONFIG_FILE_PATH) as config_f:
+        config.update(yaml.load(config_f)
+
+CONFIG.setdefault('AWS_REGION', os.environ.get('AWS_REGION', 'us-east-1'))
+CONFIG.setdefault('AWS_ACCESS_KEY_ID', os.environ.get('AWS_ACCESS_KEY_ID'))
+CONFIG.setdefault(
+    'AWS_SECRET_ACCESS_KEY',
+    os.environ.get('AWS_SECRET_ACCESS_KEY')
+)
+CONFIG.setdefault(
+    'DB_INSTANCE_CLASS',
+    os.environ.get('DB_INSTANCE_CLASS', 'db.t1.micro')
+)
+CONFIG.setdefault('MAX_RETRIES', int(os.environ.get('MAX_RETRIES', 2)))
 
 def dump_postgres(db_instance, db_name, out_file_name):
     if not 'PGPASSWORD' in os.environ:
@@ -46,7 +65,7 @@ def dump_mysql(db_instance, db_name, out_file_name):
 
 def with_retry(func, *args, **kwargs):
     ret = None
-    for x in range(MAX_RETRIES):
+    for x in range(CONFIG['MAX_RETRIES']):
         try:
             return func(*args, **kwargs)
         except (NoAuthHandlerFound, JSONResponseError) as e:
@@ -63,9 +82,9 @@ if len(sys.argv) < 2:
     print 'Usage: %s db-instance-name [db-name ...]' % sys.argv[0]
     sys.exit(1)
 
-conn = with_retry(rds2.connect_to_region, AWS_REGION,
-                  aws_access_key_id=AWS_ACCESS_KEY_ID,
-                  aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+conn = with_retry(rds2.connect_to_region, CONFIG['AWS_REGION'],
+                  aws_access_key_id=CONFIG['AWS_ACCESS_KEY_ID'],
+                  aws_secret_access_key=CONFIG['AWS_SECRET_ACCESS_KEY'])
 
 _, db_instance_name, db_names = sys.argv[0], sys.argv[1], sys.argv[2:]
 
@@ -96,7 +115,7 @@ with_retry(
     dump_instance_identifier,
     latest_snapshot['DBSnapshotIdentifier'],
     publicly_accessible=True,
-    db_instance_class=DB_INSTANCE_CLASS
+    db_instance_class=CONFIG['DB_INSTANCE_CLASS'],
 )
 
 print 'Launched instance "%s".' % dump_instance_identifier
