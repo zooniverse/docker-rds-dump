@@ -75,7 +75,7 @@ def with_retry(func, *args, **kwargs):
         except (NoAuthHandlerFound, JSONResponseError) as e:
             ret = e
             sleep(10)
-    return ret
+    raise ret
 
 dump_cmds = {
     'postgres': dump_postgres,
