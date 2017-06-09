@@ -109,10 +109,16 @@ latest_snapshot_name = latest_snapshot['DBSnapshotIdentifier'].split(':')[-1]
 
 print 'Found snapshot "%s".' % latest_snapshot['DBSnapshotIdentifier']
 
-dump_instance_identifier = 'dump-%s-%s' % (
-    latest_snapshot_name,
-    "".join([ random.choice(string.letters) for x in range(8) ])
+identifier_prefix = 'dump-{}'.format(
+    "".join([random.choice(string.letters) for x in range(8)]),
 )
+
+dump_instance_identifier = '{}-{}'.format(
+    identifier_prefix,
+    latest_snapshot_name,
+)
+dump_instance_identifier = dump_instance_identifier[:64]
+
 
 with_retry(
     conn.restore_db_instance_from_db_snapshot,
