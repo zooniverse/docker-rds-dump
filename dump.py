@@ -117,7 +117,7 @@ dump_instance_identifier = '{}-{}'.format(
     identifier_prefix,
     latest_snapshot_name,
 )
-dump_instance_identifier = dump_instance_identifier[:64]
+dump_instance_identifier = dump_instance_identifier[:63]
 
 
 with_retry(
