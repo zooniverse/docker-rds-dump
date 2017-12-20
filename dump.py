@@ -34,6 +34,7 @@ CONFIG.setdefault(
     os.environ.get('DB_INSTANCE_CLASS', 'db.t1.micro')
 )
 CONFIG.setdefault('MAX_RETRIES', int(os.environ.get('MAX_RETRIES', 2)))
+CONFIG.setdefault('DB_SUBNET_GROUP_NAME', os.environ.get('DB_SUBNET_GROUP_NAME'))
 
 if not 'DB_USER' in CONFIG and 'DB_USER' in os.environ:
     CONFIG['DB_USER'] = os.environ['DB_USER']
@@ -126,6 +127,7 @@ with_retry(
     latest_snapshot['DBSnapshotIdentifier'],
     publicly_accessible=True,
     db_instance_class=CONFIG['DB_INSTANCE_CLASS'],
+    db_subnet_group_name=CONFIG['DB_SUBNET_GROUP_NAME'],
 )
 
 print 'Launched instance "%s".' % dump_instance_identifier
