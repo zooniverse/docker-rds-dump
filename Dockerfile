@@ -7,7 +7,7 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" \
     apt-key add /usr/src/app/ACCC4CF8.asc && \
     apt-get update && \
     apt-get install -y \
-        postgresql-client-9.4 \
+        postgresql-client-9.5 \
         mysql-client \
         python-yaml \
         python-boto \
