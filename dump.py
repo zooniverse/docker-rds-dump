@@ -41,28 +41,41 @@ if not 'DB_USER' in CONFIG and 'DB_USER' in os.environ:
 
 CONFIG.setdefault('DB_PASSWORD', os.environ.get('DB_PASSWORD', ''))
 
+def db_credentials(db_name):
+    credentials = CONFIG['databases'].get(db_name, {})
+    return (
+        credentials.get('user', CONFIG['DB_USER']),
+        credentials.get('password', CONFIG['DB_PASSWORD']),
+    )
+
 def dump_postgres(db_instance, db_name, out_file_name):
-    os.environ['PGPASSWORD'] = CONFIG['DB_PASSWORD']
+    db_user, os.environ['PGPASSWORD'] = db_credentials(db_name)
+    if not db_user:
+        db_user = db_instance['MasterUsername']
 
     with open(
         '/out/%s.dump' % out_file_name, 'w'
     ) as outfile:
         return subprocess.check_call([
             'pg_dump', '-w', '-Fc',
-            '-U', CONFIG.get('DB_USER', db_instance['MasterUsername']),
+            '-U', db_user,
             '-h', db_instance['Endpoint']['Address'],
             '-p', str(db_instance['Endpoint']['Port']),
             db_name
         ], stdout=outfile)
 
 def dump_mysql(db_instance, db_name, out_file_name):
+    db_user, db_password = db_credentials(db_name)
+    if not db_user:
+        db_user = db_instance['MasterUsername']
+
     with open(
         '/out/%s.sql' % out_file_name, 'w'
     ) as outfile:
         return subprocess.check_call([
             'mysqldump',
-            '-u', CONFIG.get('DB_USER', db_instance['MasterUsername']),
-            '-p%s' % CONFIG['DB_PASSWORD'],
+            '-u', db_user,
+            '-p%s' % db_password,
             '-h', db_instance['Endpoint']['Address'],
             '-P', str(db_instance['Endpoint']['Port']),
             db_name
@@ -168,17 +181,20 @@ try:
         sys.exit(4)
 
     if len(db_names) == 0:
-        print 'Dumping "%s".' % dump_instance['DBName']
-        dump_cmds[dump_instance['Engine']](
-            dump_instance, dump_instance['DBName'], latest_snapshot_name
-        )
-    else:
-        for db_name in db_names:
-            print 'Dumping "%s".' % db_name
+        if len(CONFIG['databases']) == 0:
+            print 'Dumping "%s".' % dump_instance['DBName']
             dump_cmds[dump_instance['Engine']](
-                dump_instance, db_name,
-                '%s-%s' % (db_name, latest_snapshot_name)
+                dump_instance, dump_instance['DBName'], latest_snapshot_name
             )
+            continue
+        db_names = CONFIG['databases'].keys()
+
+    for db_name in db_names:
+        print 'Dumping "%s".' % db_name
+        dump_cmds[dump_instance['Engine']](
+            dump_instance, db_name,
+            '%s-%s' % (db_name, latest_snapshot_name)
+        )
 
     print "Dump completed."
 finally:
