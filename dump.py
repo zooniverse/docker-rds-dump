@@ -182,12 +182,9 @@ try:
 
     if len(db_names) == 0:
         if len(CONFIG['databases']) == 0:
-            print 'Dumping "%s".' % dump_instance['DBName']
-            dump_cmds[dump_instance['Engine']](
-                dump_instance, dump_instance['DBName'], latest_snapshot_name
-            )
-            continue
-        db_names = CONFIG['databases'].keys()
+            db_names = [dump_instance['DBName']]
+        else:
+            db_names = CONFIG['databases'].keys()
 
     for db_name in db_names:
         print 'Dumping "%s".' % db_name
