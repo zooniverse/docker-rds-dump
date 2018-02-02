@@ -42,10 +42,14 @@ if not 'DB_USER' in CONFIG and 'DB_USER' in os.environ:
 CONFIG.setdefault('DB_PASSWORD', os.environ.get('DB_PASSWORD', ''))
 
 def db_credentials(db_name):
-    credentials = CONFIG['databases'].get(db_name, {})
+    db_config = CONFIG.get('databases', {})
+    if db_config:
+        credentials = db_config.get(db_name, {})
+    else:
+        credentials = {}
     return (
-        credentials.get('user', CONFIG['DB_USER']),
-        credentials.get('password', CONFIG['DB_PASSWORD']),
+        credentials.get('user', CONFIG.get('DB_USER', '')),
+        credentials.get('password', CONFIG.get('DB_PASSWORD', '')),
     )
 
 def dump_postgres(db_instance, db_name, out_file_name):
@@ -181,7 +185,7 @@ try:
         sys.exit(4)
 
     if len(db_names) == 0:
-        if len(CONFIG['databases']) == 0:
+        if len(CONFIG.get('databases', [])) == 0:
             db_names = [dump_instance['DBName']]
         else:
             db_names = CONFIG['databases'].keys()
