@@ -43,10 +43,15 @@ CONFIG.setdefault('DB_PASSWORD', os.environ.get('DB_PASSWORD', ''))
 
 def db_credentials(db_name):
     db_config = CONFIG.get('databases', {})
-    if db_config:
-        credentials = db_config.get(db_name, {})
-    else:
+    # If there is an empty databases section in the config file
+    if not db_config:
+        db_config = {}
+
+    credentials = db_config.get(db_name, {})
+    # If the DB name is listed but has no credentials
+    if not credentials:
         credentials = {}
+
     return (
         credentials.get('user', CONFIG.get('DB_USER', '')),
         credentials.get('password', CONFIG.get('DB_PASSWORD', '')),
