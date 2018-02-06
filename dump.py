@@ -95,7 +95,11 @@ def with_retry(func, *args, **kwargs):
     for x in range(CONFIG['MAX_RETRIES']):
         try:
             return func(*args, **kwargs)
-        except (NoAuthHandlerFound, JSONResponseError) as e:
+        except (
+            NoAuthHandlerFound,
+            JSONResponseError,
+            subprocess.CalledProcessError,
+        ) as e:
             ret = e
             sleep(10)
     raise ret
@@ -197,9 +201,11 @@ try:
 
     for db_name in db_names:
         print 'Dumping "%s".' % db_name
-        dump_cmds[dump_instance['Engine']](
-            dump_instance, db_name,
-            '%s-%s' % (db_name, latest_snapshot_name)
+        with_retry(
+            dump_cmds[dump_instance['Engine']],
+            dump_instance,
+            db_name,
+            '%s-%s' % (db_name, latest_snapshot_name),
         )
 
     print "Dump completed."
