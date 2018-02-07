@@ -92,7 +92,11 @@ def dump_mysql(db_instance, db_name, out_file_name):
 
 def with_retry(func, *args, **kwargs):
     ret = None
-    for x in range(CONFIG['MAX_RETRIES']):
+    if 'retries' in kwargs:
+        retries = kwargs.pop('retries')
+    else:
+        retries = CONFIG['MAX_RETRIES']
+    for x in range(retries):
         try:
             return func(*args, **kwargs)
         except (
@@ -206,6 +210,7 @@ try:
             dump_instance,
             db_name,
             '%s-%s' % (db_name, latest_snapshot_name),
+            retries=10,
         )
 
     print "Dump completed."
