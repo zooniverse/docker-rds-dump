@@ -34,6 +34,10 @@ CONFIG.setdefault(
     os.environ.get('DB_INSTANCE_CLASS', 'db.t1.micro')
 )
 CONFIG.setdefault('MAX_RETRIES', int(os.environ.get('MAX_RETRIES', 2)))
+CONFIG.setdefault(
+    'MAX_DUMP_RETRIES',
+    int(os.environ.get('MAX_DUMP_RETRIES', CONFIG['MAX_RETRIES'])),
+)
 CONFIG.setdefault('DB_SUBNET_GROUP_NAME', os.environ.get('DB_SUBNET_GROUP_NAME'))
 
 if not 'DB_USER' in CONFIG and 'DB_USER' in os.environ:
@@ -210,7 +214,7 @@ try:
             dump_instance,
             db_name,
             '%s-%s' % (db_name, latest_snapshot_name),
-            retries=10,
+            retries=CONFIG['MAX_DUMP_RETRIES'],
         )
 
     print "Dump completed."
