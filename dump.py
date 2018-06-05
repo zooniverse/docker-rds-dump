@@ -31,7 +31,7 @@ CONFIG.setdefault(
 )
 CONFIG.setdefault(
     'DB_INSTANCE_CLASS',
-    os.environ.get('DB_INSTANCE_CLASS', 'db.t1.micro')
+    os.environ.get('DB_INSTANCE_CLASS', 'db.t2.micro')
 )
 CONFIG.setdefault('MAX_RETRIES', int(os.environ.get('MAX_RETRIES', 2)))
 CONFIG.setdefault(
